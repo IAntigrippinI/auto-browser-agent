@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import List
 
 from application.dto import AgentStep, TaskMemory
-from application.console import agent, function_call, llm
+from application.console import agent, function_call, llm, user_prompt
 from contracts.model_client import ModelClient
 from contracts.security import SecurityContext
 from contracts.tool_executor import ToolExecutor, Tool, ToolCall
@@ -23,6 +23,7 @@ class BrowserAgent:
         self._memory = memory if memory is not None else TaskMemory()
         self._security_context = security_context
         self._steps: List[AgentStep] = []
+        self._user_answer_count = 0
 
     @property
     def token_usage(self) -> dict:
@@ -33,6 +34,7 @@ class BrowserAgent:
             prompt: str
     ):
        self._memory.facts.clear()
+       self._user_answer_count = 0
        if self._security_context is not None:
            self._security_context.goal = prompt
        return await self._run_loop(prompt)
@@ -87,8 +89,13 @@ class BrowserAgent:
                     return
                 if fc.name == "agent_request_user":
                     question = fc.arguments.get("question", "")
-                    agent(f"AGENT: waiting for user — {question}")
+                    user_prompt(f"AGENT: waiting for user — {question}")
                     continuation = input("Ваш ответ: ")
+                    self._user_answer_count += 1
+                    self._memory.facts[f"user_answer_{self._user_answer_count}"] = {
+                        "value": continuation,
+                        "source": f"Ответ пользователя на вопрос: {question}",
+                    }
                     requested_user = True
                     break
             if requested_user:

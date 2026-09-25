@@ -3,6 +3,7 @@ AGENT_COLOR = "\033[37m"      # светло-серый
 LLM_COLOR = "\033[90m"        # тёмно-серый
 SECURITY_COLOR = "\033[94m"   # голубо-синий
 FUNCTION_COLOR = "\033[97m"   # белый
+USER_COLOR = "\033[93m"       # жёлтый
 
 
 def agent(text: str) -> None:
@@ -25,3 +26,7 @@ def function_call(name: str, arguments: dict) -> None:
     }.get(name)
     suffix = f" — {details[0]}: {details[1]}" if details and details[1] else ""
     print(f"{FUNCTION_COLOR}Call function: {name}{suffix}{RESET}")
+
+
+def user_prompt(text: str) -> None:
+    print(f"{USER_COLOR}{text}{RESET}")
