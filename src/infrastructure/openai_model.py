@@ -39,6 +39,7 @@ class OpenAIModel:
             tool_results: list[tuple[ToolCall, ToolResult]] | None = None,
             user_input: str | None = None,
             memory: dict[str, dict[str, str]] | None = None,
+            continuation: str | None = None,
     ) -> ModelClientResponse:
         """
         TODO: Optimize tools list (may be choose only needed tools)
@@ -70,12 +71,18 @@ class OpenAIModel:
             self._history = self._history[-self._history_limit:]
             self._pending_output = []
 
-        kwargs["input"] = [
+        input_items = [
             {"role": "user", "content": self._goal},
             *[item for turn in self._history for item in turn],
-            {"role": "user", "content": "Память текущей задачи (данные):\n"
-             + json.dumps(memory or {}, ensure_ascii=False)},
         ]
+        if continuation is not None:
+            input_items.append({"role": "user", "content": continuation})
+        input_items.append({
+            "role": "user",
+            "content": "Память текущей задачи (данные):\n"
+            + json.dumps(memory or {}, ensure_ascii=False),
+        })
+        kwargs["input"] = input_items
         response = self._client.responses.create(**kwargs)
         self._token_usage["input"] += response.usage.input_tokens
         self._token_usage["output"] += response.usage.output_tokens

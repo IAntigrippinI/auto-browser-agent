@@ -35,7 +35,6 @@ class OpenAIMCPSecurityChecker:
                 max_output_tokens=32,
             )
             raw = _response_text(response)
-            print(f"Checker LLM: {raw}")
             if not raw:
                 return _fallback_decision(goal, action)
             lines = [line.strip(" -*") for line in raw.splitlines() if line.strip()]

@@ -22,6 +22,7 @@ class ModelClient(Protocol):
             tool_results: list[tuple[ToolCall, ToolResult]] | None = None,
             user_input: str | None = None,
             memory: dict[str, dict[str, str]] | None = None,
+            continuation: str | None = None,
     ) -> ModelClientResponse: ...
 
     @property

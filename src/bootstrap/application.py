@@ -5,6 +5,8 @@ from collections.abc import AsyncIterator
 from application.agent import BrowserAgent
 from application.dto import TaskMemory
 from application.memory_tool_executor import MemoryToolExecutor
+from application.control_tool_executor import ControlToolExecutor
+from application.tool_orchestrator import ToolOrchestrator
 from application.secure_tool_executor import SecureToolExecutor
 from config.settings import get_settings
 from infrastructure.mcp_playwright_prompt import MCPPlaywrightPrompt
@@ -46,8 +48,8 @@ async def build_agent() -> AsyncIterator[BrowserAgent]:
         )
 
 
-        yield BrowserAgent(
-            tool_executor=MemoryToolExecutor(
+        tool_executor = ToolOrchestrator([
+            MemoryToolExecutor(
                 SecureToolExecutor(
                     browser_executor,
                     OpenAIMCPSecurityChecker(
@@ -59,6 +61,11 @@ async def build_agent() -> AsyncIterator[BrowserAgent]:
                 ),
                 memory,
             ),
+            ControlToolExecutor(),
+        ])
+
+        yield BrowserAgent(
+            tool_executor=tool_executor,
             memory=memory,
             security_context=security_context,
             llm=client_model
