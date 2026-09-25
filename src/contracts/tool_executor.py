@@ -7,6 +7,7 @@ class ToolCall:
     name: str
     arguments: dict
     call_id: str | None = None
+    reason: str | None = None
 
 
 @dataclass

@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Protocol, Any, List
 
-from application.dto import AgentStep
 from contracts.tool_executor import Tool, ToolCall, ToolResult
 
 

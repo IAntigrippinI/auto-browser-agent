@@ -5,10 +5,13 @@ from collections.abc import AsyncIterator
 from application.agent import BrowserAgent
 from application.dto import TaskMemory
 from application.memory_tool_executor import MemoryToolExecutor
+from application.secure_tool_executor import SecureToolExecutor
 from config.settings import get_settings
 from infrastructure.mcp_playwright_prompt import MCPPlaywrightPrompt
 from infrastructure.mcp_tool_executor import MCPToolExecutor
 from infrastructure.openai_model import OpenAIModel
+from infrastructure.openai_security_checker import OpenAIMCPSecurityChecker
+from contracts.security import SecurityContext
 
 from mcp import Client, StdioServerParameters
 
@@ -32,7 +35,8 @@ async def build_agent() -> AsyncIterator[BrowserAgent]:
     async with Client(server) as client:
 
         memory = TaskMemory()
-        tool_executor = MemoryToolExecutor(MCPToolExecutor(client), memory)
+        security_context = SecurityContext()
+        browser_executor = MCPToolExecutor(client)
         system_prompt = MCPPlaywrightPrompt()
         client_model = OpenAIModel(
             api_key=settings.openai_api_key,
@@ -43,7 +47,19 @@ async def build_agent() -> AsyncIterator[BrowserAgent]:
 
 
         yield BrowserAgent(
-            tool_executor=tool_executor,
+            tool_executor=MemoryToolExecutor(
+                SecureToolExecutor(
+                    browser_executor,
+                    OpenAIMCPSecurityChecker(
+                        api_key=settings.openai_api_key,
+                        base_url=settings.openai_base_url,
+                        model=settings.openai_model,
+                    ),
+                    context=security_context,
+                ),
+                memory,
+            ),
             memory=memory,
+            security_context=security_context,
             llm=client_model
         )

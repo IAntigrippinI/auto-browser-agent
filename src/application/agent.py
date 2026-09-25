@@ -4,6 +4,7 @@ from typing import List
 
 from application.dto import AgentStep, TaskMemory
 from contracts.model_client import ModelClient
+from contracts.security import SecurityContext
 from contracts.tool_executor import ToolExecutor, Tool, ToolCall
 
 
@@ -14,10 +15,12 @@ class BrowserAgent:
             llm: ModelClient,
             tool_executor: ToolExecutor,
             memory: TaskMemory | None = None,
+            security_context: SecurityContext | None = None,
     ):
         self._llm = llm
         self._tool_executor = tool_executor
         self._memory = memory if memory is not None else TaskMemory()
+        self._security_context = security_context
         self._steps: List[AgentStep] = []
 
     @property
@@ -29,6 +32,8 @@ class BrowserAgent:
             prompt: str
     ):
        self._memory.facts.clear()
+       if self._security_context is not None:
+           self._security_context.goal = prompt
        tool_results = []
        user_input = prompt
        tools = await self._tool_executor.get_tools()

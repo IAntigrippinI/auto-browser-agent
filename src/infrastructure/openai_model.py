@@ -4,7 +4,6 @@ from typing import Any
 from mcp_types import TextContent, ImageContent, CallToolResult
 from openai import OpenAI
 
-from application.dto import AgentStep
 from contracts.model_client import ModelClientResponse
 from contracts.prompt import SystemPrompt
 from contracts.tool_executor import Tool, ToolCall, ToolResult
@@ -99,14 +98,37 @@ def _tool_to_openai(tool: Tool) -> dict:
 def _openai_response_to_client_response(
         response: Any,
 ) -> ModelClientResponse:
+    response_text = _response_text(response)
     return ModelClientResponse(
-        text=response.output_text,
+        text=response_text,
         function_call=[
-                ToolCall(name=item.name, arguments=json.loads(item.arguments), call_id=item.call_id)
+                ToolCall(
+                    name=item.name,
+                    arguments=json.loads(item.arguments),
+                    call_id=item.call_id,
+                    reason=response_text[:500] or None,
+                )
                 for item in response.output
                 if item.type == "function_call"
             ]
     )
+
+
+def _response_text(response: Any) -> str:
+    text = getattr(response, "output_text", None)
+    if text:
+        return text.strip()
+
+    chunks = []
+    for item in getattr(response, "output", []) or []:
+        direct_text = getattr(item, "text", None)
+        if direct_text:
+            chunks.append(direct_text)
+        for content in getattr(item, "content", []) or []:
+            content_text = getattr(content, "text", None)
+            if content_text:
+                chunks.append(content_text)
+    return "\n".join(chunks).strip()
 
 def _bounded_tool_output(result: ToolResult):
     output = _tool_result_to_openai_output(result)
