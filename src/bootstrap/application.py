@@ -6,6 +6,7 @@ from application.agent import BrowserAgent
 from application.dto import TaskMemory
 from application.memory_tool_executor import MemoryToolExecutor
 from config.settings import get_settings
+from infrastructure.mcp_playwright_prompt import MCPPlaywrightPrompt
 from infrastructure.mcp_tool_executor import MCPToolExecutor
 from infrastructure.openai_model import OpenAIModel
 
@@ -20,6 +21,7 @@ async def build_agent() -> AsyncIterator[BrowserAgent]:
             "-y",
             "@playwright/mcp@latest",
             "--extension",
+            "--snapshot-mode=none"
         ],
         env={
             **os.environ,
@@ -31,10 +33,12 @@ async def build_agent() -> AsyncIterator[BrowserAgent]:
 
         memory = TaskMemory()
         tool_executor = MemoryToolExecutor(MCPToolExecutor(client), memory)
+        system_prompt = MCPPlaywrightPrompt()
         client_model = OpenAIModel(
             api_key=settings.openai_api_key,
             model=settings.openai_model,
             base_url=settings.openai_base_url,
+            system_prompt=system_prompt,
         )
 
 
